@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ $# -eq 2 ]]; then
+    grep --include=\*.$1 -rn . -Ee $2
+else
+    echo "Usage: $(basename $0) <extension to search> <search term>"
+    echo "Searches througuh the working directory looking for files with the given"
+    echo "extension that contain the search term"
+fi
+
