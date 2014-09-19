@@ -1,18 +1,22 @@
 #!/bin/bash
 
-if [[ $# -eq 1 ]]; then
-    res=$(createdb $1 2>&1)
-    if [[ $res =~ "ERROR:  database \"$1\" already exists" ]]; then
-        echo "Database '$1' already exists and will be replaced. Continue? "
-        read confirmation
-        if [[ $confirmation != "y" && $confirmation != "Y" ]]; then
-            exit
-        fi
-    fi
-    curl `heroku pgbackups:url` | pg_restore --verbose --clean --no-acl --no-owner -h localhost -U `whoami` -d $1
-else
+if [[ $# -ne 1 ]]; then
     echo "Usage: $(basename $0) <database-name>"
     echo "Downloads the postgres database from the current heroku app"
     echo "and puts it in a local database with the speficied name"
+    exit
 fi
+
+# Set up the database for overwriting, asking the user for confirmation if necessary
+res=$(createdb $1 2>&1)
+if [[ $res =~ "ERROR:  database \"$1\" already exists" ]]; then
+    echo "Database '$1' already exists and will be replaced. Continue? "
+    read confirmation
+    if [[ $confirmation != "y" && $confirmation != "Y" ]]; then
+        exit
+    fi
+fi
+
+# Run the command to download the contents and put it into the local database
+curl `heroku pgbackups:url` | pg_restore --verbose --clean --no-acl --no-owner -h localhost -U `whoami` -d $1
 
