@@ -2,9 +2,11 @@
 
 if [[ $# -lt 2 ]]; then
     echo "Usage: $(basename $0) <extension to search> <search term> [parameters]"
+    echo ""
     echo "Searches througuh the working directory looking for files with the given"
     echo "extension that contain the search term. If extension is --all or -a"
     echo "it will search through all files with all extensions."
+    echo ""
     echo "Any of the remaining parameters will be passed directly to grep."
     exit
 fi

@@ -2,6 +2,7 @@
 
 if [[ $# -ne 1 ]]; then
     echo "Usage: $(basename $0) <database-name>"
+    echo ""
     echo "Downloads the postgres database from the current heroku app"
     echo "and puts it in a local database with the speficied name"
     exit
