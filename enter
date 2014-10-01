@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Usage:
+# 
+#     $ source enter path/to/project
+
+cd $1 && source env/bin/activate
+
