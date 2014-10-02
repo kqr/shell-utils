@@ -3,6 +3,11 @@
 # Usage:
 # 
 #     $ source enter path/to/project
+#
+# Will either enter the project directory and activate the
+# virtualenv, or if either step fails not do anything at all!
 
-cd $1 && source env/bin/activate
+cd $1 && {
+  source env/bin/activate || cd -
+}
 
