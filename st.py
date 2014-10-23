@@ -17,6 +17,8 @@ import sys
 # TODO: don't do I/O in the function
 # TODO: mark outliers specifically? (outliers defined
 #       as on http://sv.wikipedia.org/wiki/L%C3%A5dagram )
+# TODO: add possibility to choose formatting options with
+#       arguments to the script
 
 numbers = [float(line) for line in sys.stdin]
 numbers.sort()
