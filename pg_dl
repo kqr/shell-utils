@@ -1,11 +1,11 @@
 #!/bin/bash
 
 if [[ $# -ne 1 ]]; then
-    echo "Usage: $(basename $0) <database-name>"
-    echo ""
-    echo "Downloads the postgres database from the current heroku app"
-    echo "and puts it in a local database with the speficied name"
-    exit
+    >&2 echo "Usage: $(basename $0) <database-name>"
+    >&2 echo ""
+    >&2 echo "Downloads the postgres database from the current heroku app"
+    >&2 echo "and puts it in a local database with the speficied name"
+    exit 1
 fi
 
 # Set up the database for overwriting, asking the user for confirmation if necessary
@@ -14,7 +14,7 @@ if [[ $res =~ "ERROR:  database \"$1\" already exists" ]]; then
     echo "Database '$1' already exists and will be replaced. Continue? "
     read confirmation
     if [[ $confirmation != "y" && $confirmation != "Y" ]]; then
-        exit
+        exit 1
     fi
 fi
 

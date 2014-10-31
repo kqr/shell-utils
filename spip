@@ -4,7 +4,7 @@ if [[ -z $VIRTUAL_ENV ]]; then
   echo "You're not in a virtualenv, do you really want to go on?"
   read confirmation
   if [[ $confirmation != "y" && $confirmation != "Y" ]]; then
-    exit;
+    exit 1;
   fi
 fi
 
