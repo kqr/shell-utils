@@ -1,6 +1,5 @@
 from   functools   import partial
-import itertools
-import os, sys, re
+import sys, re
 from   subprocess  import check_output, CalledProcessError
 
 shell  = partial(check_output, shell=True)
