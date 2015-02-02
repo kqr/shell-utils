@@ -1,71 +1,89 @@
 import os, re, sys
+from   collections  import namedtuple
 from   functools    import partial
 from   itertools    import chain
 from   subprocess   import Popen, PIPE
 from   urllib.parse import urlparse
 
 stderr = partial(print, file=sys.stderr)
+Postgres = namedtuple('Postgres',
+    ['host', 'port', 'username', 'password', 'dbname'])
 
 
-def argsify(d):
-  return ('--{}={}'.format(k, v) for k, v in d.items())
+def get_pg_args(server):
+    if server.password:
+        os.environ['PGPASSWORD'] = server.password
 
-
-def download_db(server):
-    dbname = server.path.lstrip('/')
-
-    create = Popen(['createdb', dbname], stderr=PIPE)
-    res = create.stderr.read().decode('utf-8')
-    create.wait()
-    if re.search(r'ERROR:  database "{}" already exists'.format(dbname), res):
-        print('Database "{}" already exists and will be '
-              'replaced. Continue? (y/N)'.format(dbname))
-        confirmation = input()
-        if confirmation not in ['y', 'Y']:
-            return None
-
-    os.environ['PGPASSWORD'] = server.password
-    remote_args = argsify({
-        'host': server.hostname,
+    return ('--{}={}'.format(k, v) for k, v in {
+        'host': server.host,
         'port': server.port,
         'username': server.username,
-        'dbname': dbname
-    })
-    dump = Popen(
-        chain(['pg_dump', '-Fc', '--no-acl', '--no-owner'], remote_args),
-        stdout=PIPE, stderr=sys.stderr
-    )
+        'dbname': server.dbname
+    }.items() if v is not None)
 
-    local_args = argsify({
-        'host': 'localhost',
-        'username': os.environ['USER'],
-        'dbname': server.path.lstrip('/')
-    })
-    restore = Popen(
-        chain(['pg_restore', '--verbose', '--clean', '--no-acl', '--no-owner'], local_args),
-        stdin=dump.stdout, stdout=sys.stdout, stderr=sys.stderr
-    )
 
-    restore.wait()
+def create_db(dbname):
+    create = Popen(['createdb', dbname], stderr=PIPE)
+    res = create.stderr.read().decode('utf-8')
+    if re.search(r'ERROR:  database "{}" already exists'.format(dbname), res):
+        confirmation = input('Database "{}" already exists and will be '
+                             'replaced. Continue? (y/N) '.format(dbname))
+        if confirmation not in ['y', 'Y']:
+            sys.exit()
+
+
+def dump_db(server):
+    dump_cmd = ('pg_dump','-Fc','--no-acl','--no-owner')
+    return Popen(chain(dump_cmd, get_pg_args(server)),
+                 stdout=PIPE, stderr=sys.stderr)
+
+
+def restore_db(server, data, warn_nonempty):
+    if warn_nonempty:
+        create_db(server.dbname)
+
+    restore_cmd = ('pg_restore','--verbose','--clean','--no-acl','--no-owner')
+    return Popen(chain(restore_cmd, get_pg_args(server)),
+                 stdin=data, stdout=sys.stdout, stderr=sys.stderr)
+
+
+def sync_db(from_db, to_db, warn_nonempty=True):
+    data = dump_db(from_db).stdout
+    restore_db(to_db, data, warn_nonempty).wait()
 
 
 if __name__ == '__main__':
     try:
-        server = urlparse(sys.argv[2])
+        parsed = urlparse(sys.argv[2])
     except IndexError:
         stderr('Usage: python3 {} <DOWN/UP> <connection string>'.format(sys.argv[0]))
         sys.exit(1)
 
-    if server.scheme != 'postgres':
+    if parsed.scheme != 'postgres':
         stderr('The protocol specified in the connection string must be postgres!')
         sys.exit(1)
 
+    remote = Postgres(
+        host=parsed.hostname,
+        port=parsed.port,
+        username=parsed.username,
+        password=parsed.password,
+        dbname=parsed.path.lstrip('/')
+    )
+    local = Postgres(
+        host='localhost',
+        port=None,
+        username=os.environ['USER'],
+        password=None,
+        dbname=remote.dbname
+    )
+
     if sys.argv[1] == 'DOWN':
-        download_db(server)
+        sync_db(from_db=remote, to_db=local)
         sys.exit()
 
     elif sys.argv[1] == 'UP':
-        raise NotImplementedError('Syncing up isn\'t implemented yet')
+        sync_db(from_db=local, to_db=remote, warn_nonempty=False)
         sys.exit()
 
     else:
