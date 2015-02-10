@@ -1,21 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
 
-import System.Process
-import Data.List
-import Control.Arrow
-import System.Environment
-import Control.Monad
+import           Turtle
+import qualified Control.Foldl as L (length)
+import           Control.Monad      (ap)
 
-infixr 1 <&>
-(<&>) = flip fmap
+main = wcL (candidates dryUpgrade) >>= ap notify pending
 
-wrapMany n str | n > 25    = "<fc=red>" ++ str ++ "</fc>"
-               | otherwise = str
+wcL = flip fold L.length
+candidates = grep (prefix "Inst")
+dryUpgrade = inshell "apt-get --dry-run upgrade" ""
 
-main = do
-  res <- readProcess "apt-get" ["--dry-run", "upgrade"] ""
-     <&> lines
-     >>> filter ("Inst " `isPrefixOf`)
-     >>> length
-  when (res > 0) $
-    putStrLn (wrapMany res ("Updates pending: " ++ show res))
+notify n | n > 25    = alert
+         | n > 0     = echo
+         | otherwise = const (return ())
 
+pending = format ("Updates pending: "%d)
+
+alert = echo . format ("<fc=red>"%s%"</fc>")
