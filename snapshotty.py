@@ -1,7 +1,21 @@
+from   __future__ import print_function
 from   functools  import partial
 import sys, re
-from   subprocess import check_output, CalledProcessError
-from   __future__ import print_function
+from   subprocess import Popen, PIPE, CalledProcessError
+
+def check_output(*popenargs, **kwargs):
+    """Copy pasted implementation from 2.7+ version of the subprocess library"""
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+    process = Popen(stdout=PIPE, *popenargs, **kwargs)
+    output, unused_err = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = kwargs.get('args')
+        if cmd is None:
+            cmd = popenargs[0]
+        raise CalledProcessError(retcode, cmd, output=output)
+    return output
 
 shell  = partial(check_output, shell=True)
 stderr = partial(print, file=sys.stderr)
