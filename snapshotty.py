@@ -1,11 +1,12 @@
-from   functools   import partial
+from   functools  import partial
 import sys, re
-from   subprocess  import check_output, CalledProcessError
+from   subprocess import check_output, CalledProcessError
+from   __future__ import print_function
 
 shell  = partial(check_output, shell=True)
 stderr = partial(print, file=sys.stderr)
 
-class Snapshot:
+class Snapshot(object):
     describe_cmd = 'ec2-describe-snapshots --region eu-west-1'
     create_cmd   = 'ec2-create-snapshot --region eu-west-1'
     delete_cmd   = 'ec2-delete-snapshot --region eu-west-1'
@@ -16,11 +17,11 @@ class Snapshot:
         self.kind = kind
 
         args = (self.machine_name, self.kind)
-        self.name_pattern = re.compile(r'{}_backup_{}_(?P<number>\d+)'.format(*args))
+        self.name_pattern = re.compile(r'{0}_backup_{1}_(?P<number>\d+)'.format(*args))
         self.snapshot_pattern = re.compile(r'snap-[0-9a-f]+')
 
     def make_name(self, number):
-        return '{}_backup_{}_{}'.format(self.machine_name, self.kind, number)
+        return '{0}_backup_{1}_{2}'.format(self.machine_name, self.kind, number)
 
     def find(self):
         for volume in shell(Snapshot.describe_cmd).decode('utf-8').split('\n'):
@@ -30,10 +31,10 @@ class Snapshot:
                 yield int(m.group('number')), snapshot_id.group(0)
 
     def create(self, name):
-        shell('{} -d {} {}'.format(Snapshot.create_cmd, name, self.volume_id))
+        shell('{0} -d {1} {2}'.format(Snapshot.create_cmd, name, self.volume_id))
 
     def delete(self, name):
-        shell('{} {}'.format(Snapshot.delete_cmd, name))
+        shell('{0} {1}'.format(Snapshot.delete_cmd, name))
 
 
 def main(snapshot):
@@ -41,8 +42,8 @@ def main(snapshot):
         snapshots = sorted(list(snapshot.find()), key=lambda a: a[0])
     except CalledProcessError:
         args = (snapshots.kind, snapshots.volume_id, snapshots.machine_name)
-        desc = '{} snapshots for {} on {}'.format(*args)
-        stderr('Could not list available {}, aborting...'.format(desc))
+        desc = '{0} snapshots for {1} on {2}'.format(*args)
+        stderr('Could not list available {0}, aborting...'.format(desc))
         sys.exit(1)
 
     try: next = snapshot.make_name(snapshots[-1][0] + 1)
@@ -51,7 +52,7 @@ def main(snapshot):
     try:
         snapshot.create(next)
     except CalledProcessError:
-        stderr('Failed to create snapshot {}, aborting...'.format(next))
+        stderr('Failed to create snapshot {0}, aborting...'.format(next))
         sys.exit(1)
 
     try: remove = snapshots[-4][1]
@@ -60,7 +61,7 @@ def main(snapshot):
     try:
         snapshot.delete(remove)
     except CalledProcessError:
-        stderr('Failed to delete snapshot {}'.format(remove))
+        stderr('Failed to delete snapshot {0}'.format(remove))
 
 
 if __name__ == '__main__':
