@@ -1,3 +1,4 @@
+from   __future__   import print_function
 import os, re, sys
 from   collections  import namedtuple
 from   functools    import partial
@@ -8,6 +9,9 @@ from   urllib.parse import urlparse
 stderr = partial(print, file=sys.stderr)
 Postgres = namedtuple('Postgres',
     ['host', 'port', 'username', 'password', 'dbname'])
+
+
+BACKUP_SSH = 'ssh -i .ssh/e14.pem ec2-user@54.154.176.115'
 
 
 def get_pg_args(server):
@@ -83,7 +87,15 @@ if __name__ == '__main__':
         sys.exit()
 
     elif sys.argv[1] == 'UP':
-        sync_db(from_db=local, to_db=remote, warn_nonempty=False)
+        if remote.host in BACKUP_SSH:
+            backup_cmd = tuple(BACKUP_SSH.split(' ')) + \
+                         ('python dump_db.py s3://agi-pg-backups {0}'.format(remote.dbname),)
+            try:
+                Popen(backup_cmd).wait()
+            except CalledProcessError:
+                stderr('Remote backup imporperly configured, skipping that...')
+
+#        sync_db(from_db=local, to_db=remote, warn_nonempty=False)
         sys.exit()
 
     else:
