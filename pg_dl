@@ -19,5 +19,5 @@ if [[ $res =~ "ERROR:  database \"$1\" already exists" ]]; then
 fi
 
 # Run the command to download the contents and put it into the local database
-curl `heroku pgbackups:url` | pg_restore --verbose --clean --no-acl --no-owner -h localhost -U `whoami` -d $1
+curl $(heroku pg:backups public-url) | pg_restore --verbose --clean --no-acl --no-owner -h localhost -U `whoami` -d $1
 
