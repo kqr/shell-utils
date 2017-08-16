@@ -1,0 +1,4 @@
+scp "$@" kqr@vps.xkqr.org:/home/kqr/i.xkqr.org/.
+for arg in "$@"; do
+    echo "http://i.xkqr.org/$(basename $arg)"
+done

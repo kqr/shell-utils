@@ -1,0 +1,2 @@
+#!/bin/sh
+hledger -f ~/.hledger/kth.timeclock reg -p "$*"
